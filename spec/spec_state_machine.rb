@@ -15,7 +15,7 @@ class Job
   #   allow_transition :reject, :from => :assigned, :to => :waiting
   # end
   #
-  # def can_cancel?; false; end
+  # def guard_for_cancel; false; end
 end
 
 # Job.dispatcn_state_default_state => :waiting
