@@ -15,7 +15,7 @@ module StateMachine
       current_state = @owner.send self.class.parents_state_field_name
       result = self.class.defined_transitions[current_state].collect { |hash| hash[:transition] }
       result.collect do |transition|
-        guard_method = "guard_for_#{transition}".to_sym
+        guard_method = "guard_for_#{transition}_on_#{self.class.parents_state_field_name}".to_sym
         transition if !@owner.respond_to?( guard_method ) or @owner.send(guard_method)
       end.compact
     end

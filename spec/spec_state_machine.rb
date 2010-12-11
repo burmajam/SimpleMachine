@@ -15,7 +15,7 @@ class Job
   #   allow_transition :reject, :from => :assigned, :to => :waiting
   # end
   #
-  # def guard_for_cancel; false; end
+  # def guard_for_cancel_on_dispatch_state; false; end
 end
 
 # Job.dispatcn_state_default_state => :waiting
@@ -85,13 +85,13 @@ describe StateMachine, "for :dispatch_state field on Job" do
           job.dispatch_state_machine.should have(1).allowed_transitions
           job.dispatch_state_machine.allowed_transitions.should include(:assign)
         end
-        it "doesn't contain :assign if guard_for_assign returns false" do
-          Job.any_instance.stubs(:guard_for_assign).returns false
+        it "doesn't contain :assign if #guard_for_assign_on_dispatch_state returns false" do
+          Job.any_instance.stubs(:guard_for_assign_on_dispatch_state).returns false
         
           Job.new.dispatch_state_machine.should have(0).allowed_transitions
         end
-        it "contains :assign if guard_for_assign returns true" do
-          Job.any_instance.stubs(:guard_for_assign).returns true
+        it "contains :assign if #guard_for_assign_on_dispatch_state returns true" do
+          Job.any_instance.stubs(:guard_for_assign_on_dispatch_state).returns true
         
           Job.new.dispatch_state_machine.allowed_transitions.should include(:assign)
         end
@@ -119,9 +119,9 @@ describe StateMachine, "for :dispatch_state field on Job" do
             end )
           end
         end
-        context "when it is not valid transition right now" do
+        context "when it is not valid transition due to guard method" do
           it "raises an error" do
-            Job.any_instance.stubs(:guard_for_assign).returns false
+            Job.any_instance.stubs(:guard_for_assign_on_dispatch_state).returns false
           
             job = Job.new
             lambda { job.dispatch_state_machine.assign }.should( raise_error do |e|
