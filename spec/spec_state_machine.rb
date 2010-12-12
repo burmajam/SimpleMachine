@@ -5,32 +5,49 @@ require File.expand_path(File.dirname(__FILE__) + '/../lib/state_machine')
 
 RSpec.configure { |config| config.mock_with :mocha }
 
-class Job
-  include StateMachine  
-  # implement_state_machine_for :dispatch_state do
-  #   initial_state :waiting
-  #   other_states :assigned, :cancelled
-  #   allow_transition :assign, :from => :waiting, :to => :assigned
-  #   allow_transition :cancel, :from => :waiting, :to => :cancelled
-  #   allow_transition :reject, :from => :assigned, :to => :waiting
-  # end
-  #
-  # def guard_for_cancel_on_dispatch_state; false; end
-end
+describe StateMachine, "for :dispatch_state field on Job, when state machine is aready defined for :other_state on Job and for :dispatch_state on Driver" do
+  before :all do
+    class Driver
+      include StateMachine
+      implement_state_machine_for :dispatch_state do
+        initial_state :waiting
+        other_states :assigned, :circling, :going_to_pickup_location, :on_pickup_location, :driving_passenger, :changing_zone, :going_home
+        allow_transition :assign, :from => :waiting, :to => :assigned
+      end
+    end
+    class Job
+      include StateMachine  
+      implement_state_machine_for :other_state do
+        initial_state :created
+        other_states :deleted, :reviewed, :done, :closed
+        allow_transition :delete, :from => :created, :to => :deleted
+        allow_transition :delete, :from => :reviewed, :to => :deleted
+      end
+      # following commented out lines will be tested:
+      #
+      # implement_state_machine_for :dispatch_state do
+      #   initial_state :waiting
+      #   other_states :assigned, :cancelled
+      #   allow_transition :assign, :from => :waiting, :to => :assigned
+      #   allow_transition :cancel, :from => :waiting, :to => :cancelled
+      #   allow_transition :reject, :from => :assigned, :to => :waiting
+      # end
+      #
+      # def guard_for_cancel_on_dispatch_state; false; end
+    end
 
-# Job.dispatcn_state_default_state => :waiting
-# job = Job.new
-# job.dispatcn_state => :waiting
-# job.dispatch_state_machine.allowed_transitions => [:assign]
-# job.dispatch_state_machine.can_cancel? => false
-# job.dispatch_state_machine.cancel => Exception: 'Unable to cancel due to guard'
-# job.dispatch_state_machine.can_reject? => false
-# job.dispatch_state_machine.reject => Exception: 'Invalid transition #reject from 'waiting' state'
-# job.dispatch_state_machine.can_assign? => true
-# job.dispatch_state_machine.assign => :assigned
-# job.dispatcn_state => :assigned
-
-describe StateMachine, "for :dispatch_state field on Job" do
+    # Job.dispatcn_state_default_state => :waiting
+    # job = Job.new
+    # job.dispatcn_state => :waiting
+    # job.dispatch_state_machine.allowed_transitions => [:assign]
+    # job.dispatch_state_machine.can_cancel? => false
+    # job.dispatch_state_machine.cancel => Exception: 'Unable to cancel due to guard'
+    # job.dispatch_state_machine.can_reject? => false
+    # job.dispatch_state_machine.reject => Exception: 'Invalid transition #reject from 'waiting' state'
+    # job.dispatch_state_machine.can_assign? => true
+    # job.dispatch_state_machine.assign => :assigned
+    # job.dispatcn_state => :assigned
+  end
   context "without initial state" do
     it "raises exception that initial state is undefined" do
       lambda { Job.implement_state_machine_for :dispatch_state do; end }.should( raise_error do |e|
@@ -46,17 +63,17 @@ describe StateMachine, "for :dispatch_state field on Job" do
       end
     end
     it "defines :waiting as dispatch_state_default_state in Job" do
-      Job.dispatch_state_default_state.should == :waiting
+      Job.dispatch_state_default_state.should be(:waiting)
     end    
-    it "sets dispatch_status to :waiting" do
-      Job.new.dispatch_state.should == :waiting
+    it "sets dispatch_status to :waiting on new job" do
+      Job.new.dispatch_state.should be(:waiting)
     end
 
-    describe "#dispatch_state_machine" do
+    describe "#dispatch_state_machine on job " do
       it "#all_states contains only :waiting" do
         all_states = Job.new.dispatch_state_machine.all_states
       
-        all_states.should have(1).state
+        all_states.size.should == 1
         all_states.should include(:waiting)
       end    
     end
@@ -85,15 +102,21 @@ describe StateMachine, "for :dispatch_state field on Job" do
           job.dispatch_state_machine.should have(1).allowed_transitions
           job.dispatch_state_machine.allowed_transitions.should include(:assign)
         end
-        it "doesn't contain :assign if #guard_for_assign_on_dispatch_state returns false" do
+        it "doesn't contain :assign if job#guard_for_assign_on_dispatch_state returns false" do
           Job.any_instance.stubs(:guard_for_assign_on_dispatch_state).returns false
         
           Job.new.dispatch_state_machine.should have(0).allowed_transitions
         end
-        it "contains :assign if #guard_for_assign_on_dispatch_state returns true" do
+        it "contains :assign if job#guard_for_assign_on_dispatch_state returns true" do
           Job.any_instance.stubs(:guard_for_assign_on_dispatch_state).returns true
         
           Job.new.dispatch_state_machine.allowed_transitions.should include(:assign)
+        end
+        it "raises exception if there's attempt to define again :assign transition from :waiting state" do
+          @inner_state_machine_class = Job.new.dispatch_state_machine.class
+          lambda { @inner_state_machine_class.allow_transition :assign, :from => :waiting, :to => :closed }.should( raise_error do |e|
+            e.message.should match("Already defined transition 'assign' from 'waiting' state")
+          end )
         end
       end
       describe "assign transition" do

@@ -33,10 +33,16 @@ module StateMachine
       def other_states(*other_states)
         @all_states = @all_states | other_states
       end
+      def defined_transition?(transition, from_state)
+        return false unless @defined_transitions.has_key? from_state
+        result = @defined_transitions[from_state].inject(false) { |sum, hash| sum || hash[:transition] == transition }
+        return result
+      end
       def allow_transition(transition, options)
         @defined_transitions ||= {}
         raise "Unknown source state #{options[:from]}. Please define it first as initial_state or in other_states." unless all_states.include?(options[:from])
         raise "Unknown target state #{options[:to]}. Please define it first as initial_state or in other_states." unless all_states.include?(options[:to])
+        raise "Already defined transition '#{transition}' from '#{options[:from]}' state" if defined_transition?(transition, options[:from])
         
         @defined_transitions[options[:from]] = [] unless @defined_transitions.has_key?(options[:from])
         @defined_transitions[options[:from]] << { :transition => transition, :target_state => options[:to] }     
@@ -73,7 +79,7 @@ module StateMachine
       end
       define_method machine_property_name do
         result = instance_variable_get "@#{machine_property_name}"
-        result = instance_variable_set "@#{machine_property_name}", StateMachine::ClassMethods.get_state_machine_class_for(self, state_field_name).new(self) unless result
+        result = instance_variable_set "@#{machine_property_name}", StateMachine::ClassMethods.get_state_machine_class_for(self.class, state_field_name).new(self) unless result
         result
       end
       self.class.class_eval do
@@ -92,12 +98,14 @@ module StateMachine
     @state_machine_classes = {}
     
     def self.get_state_machine_class_for(cls, state_field_name)
-      unless @state_machine_classes.has_key? state_field_name
-        @state_machine_classes[state_field_name] ||= StateMachine::StateMachinePrototype.clone
-        @state_machine_classes[state_field_name].owner_class = cls
-        @state_machine_classes[state_field_name].parents_state_field_name = state_field_name
+      key = [cls.to_s.to_sym, state_field_name]
+      # puts "AAAAAAAA: #{key.inspect}"
+      unless @state_machine_classes.has_key? key
+        @state_machine_classes[key] ||= StateMachine::StateMachinePrototype.clone
+        @state_machine_classes[key].owner_class = cls
+        @state_machine_classes[key].parents_state_field_name = state_field_name
       end
-      @state_machine_classes[state_field_name]
+      @state_machine_classes[key]
     end
   end
 end
