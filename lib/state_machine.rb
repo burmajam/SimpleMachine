@@ -102,7 +102,6 @@ module StateMachine
     
     def self.get_state_machine_class_for(cls, state_field_name)
       key = [cls.to_s.to_sym, state_field_name]
-      # puts "AAAAAAAA: #{key.inspect}"
       unless @state_machine_classes.has_key? key
         @state_machine_classes[key] ||= StateMachine::StateMachinePrototype.clone
         @state_machine_classes[key].owner_class = cls
