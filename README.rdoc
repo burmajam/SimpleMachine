@@ -15,16 +15,15 @@ After requiring 'simple_machine' inject state machine in your class like this:
 
   class Phone
     include SimpleMachine  
-	  implement_state_machine_for :my_state do
-		initial_state :off
-		other_states :ready, :dialing, :busy
-		allow_transition :turn_on,  :from => :off,     :to => :ready
-		allow_transition :dial,     :from => :ready,   :to => :dialing
-		allow_transition :hangup,   :from => :dialing, :to => :ready 
-		allow_transition :hangup,   :from => :busy,    :to => :ready
-		allow_transition :turn_off, :from => :ready,   :to => :off
-	  end	
-	end
+    implement_state_machine_for :my_state do
+      initial_state :off
+      other_states :ready, :dialing, :busy
+      allow_transition :turn_on,  :from => :off,     :to => :ready
+      allow_transition :dial,     :from => :ready,   :to => :dialing
+      allow_transition :hangup,   :from => :dialing, :to => :ready 
+      allow_transition :hangup,   :from => :busy,    :to => :ready
+      allow_transition :turn_off, :from => :ready,   :to => :off
+    end	
   end
 
 This chunk of code produces following effects:
