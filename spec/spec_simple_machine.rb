@@ -23,30 +23,7 @@ describe SimpleMachine, "for :dispatch_state field on Job, when state machine is
         allow_transition :delete, :from => :created, :to => :deleted
         allow_transition :delete, :from => :reviewed, :to => :deleted
       end
-      # following commented out lines will be tested:
-      #
-      # implement_state_machine_for :dispatch_state do
-      #   initial_state :waiting
-      #   other_states :assigned, :cancelled
-      #   allow_transition :assign, :from => :waiting, :to => :assigned
-      #   allow_transition :cancel, :from => :waiting, :to => :cancelled
-      #   allow_transition :reject, :from => :assigned, :to => :waiting
-      # end
-      #
-      # def guard_for_cancel_on_dispatch_state; false; end
     end
-
-    # Job.dispatch_state_default_state => :waiting
-    # job = Job.new
-    # job.dispatcn_state => :waiting
-    # job.dispatch_state_machine.allowed_transitions => [:assign]
-    # job.dispatch_state_machine.can_cancel? => false
-    # job.dispatch_state_machine.cancel => Exception: 'Unable to cancel due to guard'
-    # job.dispatch_state_machine.can_reject? => false
-    # job.dispatch_state_machine.reject => Exception: 'Invalid transition #reject from 'waiting' state'
-    # job.dispatch_state_machine.can_assign? => true
-    # job.dispatch_state_machine.assign => :assigned
-    # job.dispatcn_state => :assigned
   end
   context "without initial state" do
     it "raises exception that initial state is undefined" do

@@ -1,0 +1,73 @@
+= SimpleMachine
+
+SimpleMachine is module for Ruby which injects simple state machine behavior in any class that includes it. It can be defined on multiple fields in the same class
+
+== Installation
+
+Install it with "gem install simple_machine" then require 'simple_machine' in your project, or if you use Bundler add this to your Gemfile:
+  gem "simple_machine"
+
+== Usage
+
+After requiring 'simple_machine' inject state machine in your class like this:
+
+  require 'simple_machine'
+
+  class Phone
+    include SimpleMachine  
+	  implement_state_machine_for :my_state do
+        initial_state :off
+		other_states :ready, :dialing, :busy
+		allow_transition :turn_on,  :from => :off,     :to => :ready
+		allow_transition :dial,     :from => :ready,   :to => :dialing
+		allow_transition :hangup,   :from => :dialing, :to => :ready 
+		allow_transition :hangup,   :from => :busy,    :to => :ready
+		allow_transition :turn_off, :from => :ready,   :to => :off
+	  end	
+	end
+  end
+
+This chunk of code produces following effects:
+
+  Phone.my_state_default_state #=> :off
+  phone = Phone.new
+  phone.my_state #=> :off
+  phone.my_state_machine.allowed_transitions #=> [:turn_on]
+  phone.my_state_machine.can_dial? #=> false
+  phone.my_state_machine.dial #=> raises exception: 'Invalid transition #dial from 'off' state'
+  phone.my_state_machine.can_turn_on? #=> true
+  phone.my_state_machine.turn_on #=> :ready
+  phone.my_state #=> :ready
+
+=== Transition Guards
+
+You can also implement transition guards in your class like this:
+
+  class Phone
+    def guard_for_dial_on_my_state; false; end
+  end
+
+In this case even if +dial+ is allowed transition from +ready+ state this is what will happen:
+
+  phone.my_state #=> :ready
+  phone.my_state_machine.allowed_transitions #=> [:hangup]
+  phone.my_state.machine.can_dial> #=> false
+  phone.my_state_machine.dial #=> raises exception: 'Unable to dial due to guard'
+
+=== Callback
+
+After each transition callback is invoked in parent class if it is defined:
+
+  class Phone
+    def after_my_state_changed
+      puts "New my state is '#{self.my_state}'"
+    end
+  end
+
+== Test
+
+If you want to run tests you will need 'rspec' and 'mocha' gems
+
+== Disclaimer
+
+This library was made without any pretend to be big-enterprise-sega-mega solution for State machine, but I still hope you will find this small library useful in some cases (I already do :). If you have any issues or ideas feel free to fork the project and send a pull request.
