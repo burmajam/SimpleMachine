@@ -36,7 +36,7 @@ describe StateMachine, "for :dispatch_state field on Job, when state machine is 
       # def guard_for_cancel_on_dispatch_state; false; end
     end
 
-    # Job.dispatcn_state_default_state => :waiting
+    # Job.dispatch_state_default_state => :waiting
     # job = Job.new
     # job.dispatcn_state => :waiting
     # job.dispatch_state_machine.allowed_transitions => [:assign]
@@ -80,7 +80,7 @@ describe StateMachine, "for :dispatch_state field on Job, when state machine is 
   end  
 
   context "when initial :waiting and other :assigned, :accepted, :cancelled and :closed states are defined also" do
-    before :each do
+    before :all do
       Job.implement_state_machine_for :dispatch_state do
         initial_state :waiting
         other_states :assigned, :accepted, :cancelled, :closed
@@ -178,6 +178,25 @@ describe StateMachine, "for :dispatch_state field on Job, when state machine is 
           end )
         end
       end
+    end
+  end
+  context "when there are more job instances" do
+    before :all do
+      Job.implement_state_machine_for :dispatch_state do
+        allow_transition :accept, :from => :assigned, :to => :accepted
+      end
+    end
+    
+    it "each instance tracks it's own flow" do
+      job1 = Job.new
+      job2 = Job.new
+      
+      job1.dispatch_state_machine.assign
+      job2.dispatch_state_machine.assign
+      job2.dispatch_state_machine.accept
+      
+      job1.dispatch_state.should be(:assigned)
+      job2.dispatch_state.should be(:accepted)
     end
   end
 end
