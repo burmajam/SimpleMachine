@@ -16,7 +16,7 @@ After requiring 'simple_machine' inject state machine in your class like this:
   class Phone
     include SimpleMachine  
 	  implement_state_machine_for :my_state do
-        initial_state :off
+		initial_state :off
 		other_states :ready, :dialing, :busy
 		allow_transition :turn_on,  :from => :off,     :to => :ready
 		allow_transition :dial,     :from => :ready,   :to => :dialing
@@ -51,7 +51,7 @@ In this case even if +dial+ is allowed transition from +ready+ state this is wha
 
   phone.my_state #=> :ready
   phone.my_state_machine.allowed_transitions #=> [:hangup]
-  phone.my_state.machine.can_dial> #=> false
+  phone.my_state.machine.can_dial? #=> false
   phone.my_state_machine.dial #=> raises exception: 'Unable to dial due to guard'
 
 === Callback
