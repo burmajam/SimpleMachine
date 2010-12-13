@@ -131,6 +131,10 @@ describe StateMachine, "for :dispatch_state field on Job, when state machine is 
           
             job.dispatch_state.should be(:assigned)
           end
+          it "calls job#after_dispatch_state_changed callback if defined" do
+            Job.any_instance.expects(:after_dispatch_state_changed)
+            Job.new.dispatch_state_machine.assign
+          end
         end
         context "when it is not valid transition from current state" do
           it "raises an error" do

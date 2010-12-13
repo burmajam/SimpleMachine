@@ -59,7 +59,10 @@ module StateMachine
               raise "Invalid transition ##{transition.to_s.gsub '_', ' '} from '#{current_state}' state"
             end unless allowed_transitions.include? transition
             variable = "@#{self.class.parents_state_field_name}"
-            @owner.instance_eval { instance_variable_set variable, options[:to] }
+            result = @owner.instance_eval { instance_variable_set variable, options[:to] }
+            callback_method = "after_#{self.class.parents_state_field_name}_changed".to_sym
+            @owner.send callback_method if @owner.respond_to? callback_method
+            result
           end
         end   
       end
