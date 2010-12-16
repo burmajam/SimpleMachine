@@ -108,9 +108,50 @@ describe SimpleMachine, "for :dispatch_state field on Job, when state machine is
           
             job.dispatch_state.should be(:assigned)
           end
-          it "calls job#after_dispatch_state_changed callback if defined" do
-            Job.any_instance.expects(:after_dispatch_state_changed)
-            Job.new.dispatch_state_machine.assign
+          it "calls after_transition callback if defined" do
+            rspec = self
+            job = Job.new
+            @inner_state_machine_class.after_transition do
+              puts "After transition"
+              dispatch_state.should rspec.be(:assigned)
+              self.should rspec.be(job)
+            end
+            job.dispatch_state_machine.assign.should be(:assigned)
+            
+            @inner_state_machine_class.instance_eval { instance_variable_set :@after_transition, nil }
+          end
+          context "when block is given" do
+            before :each do
+              @inner_state_machine_class.expects(:defined_transition?).with(:assign, :waiting).returns(false)
+            end
+            it "executes block" do
+              rspec = self
+              job = Job.new
+              @inner_state_machine_class.allow_transition :assign, :from => :waiting, :to => :assigned do
+                dispatch_state.should rspec.be(:waiting)
+                self.should rspec.be(job)
+                true
+              end
+              
+              job.dispatch_state_machine.assign.should be(:assigned)
+            end
+            it "changes state if block returned true" do
+              @inner_state_machine_class.allow_transition :assign, :from => :waiting, :to => :assigned do              
+                true
+              end
+            
+              job = Job.new
+              job.dispatch_state_machine.assign.should be(:assigned)
+            end
+            it "doesn't change state if block returned false" do
+              @inner_state_machine_class.allow_transition :assign, :from => :waiting, :to => :assigned do              
+                false
+              end
+            
+              job = Job.new
+              job.dispatch_state_machine.assign.should be(false)
+              job.dispatch_state.should be(:waiting)
+            end
           end
         end
         context "when it is not valid transition from current state" do
@@ -159,7 +200,10 @@ describe SimpleMachine, "for :dispatch_state field on Job, when state machine is
   end
   context "when there are more job instances" do
     before :all do
+      Job.new.dispatch_state_machine.class.expects(:defined_transition?).with(:assign, :waiting).returns false
+      Job.new.dispatch_state_machine.class.expects(:defined_transition?).with(:accept, :assigned)
       Job.implement_state_machine_for :dispatch_state do
+        allow_transition :assign, :from => :waiting, :to => :assigned
         allow_transition :accept, :from => :assigned, :to => :accepted
       end
     end

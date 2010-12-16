@@ -22,7 +22,16 @@ After requiring 'simple_machine' inject state machine in your class like this:
       allow_transition :dial,     :from => :ready,   :to => :dialing
       allow_transition :hangup,   :from => :dialing, :to => :ready 
       allow_transition :hangup,   :from => :busy,    :to => :ready
-      allow_transition :turn_off, :from => :ready,   :to => :off
+      allow_transition :turn_off, :from => :ready,   :to => :off do
+        # self is set to phone instance
+        puts my_state #=> :ready  
+        # do something before transition ...
+        true # state will be changed to :off if block returns true  
+      end
+      after_transition do
+        # self is set to phone instance
+        puts "New state is '#{my_state}'"
+      end
     end	
   end
 
@@ -55,11 +64,16 @@ In this case even if +dial+ is allowed transition from +ready+ state this is wha
 
 === Callback
 
-After each transition callback is invoked in parent class if it is defined:
+After each transition callback is invoked if it is defined:
 
   class Phone
-    def after_my_state_changed
-      puts "New my state is '#{self.my_state}'"
+    include SimpleMachine  
+    implement_state_machine_for :my_state do
+      # ...
+      after_transition do
+        # self is set to phone instance
+        puts "New state is '#{my_state}'"
+      end
     end
   end
 

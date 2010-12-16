@@ -1,0 +1,3 @@
+1.0.1 (December 16, 2010)
+* Added transition block that should return true for state machine to change current state
+* After transition callback is #after_transition method in #implement_state_machine_for block now

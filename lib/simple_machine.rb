@@ -38,7 +38,10 @@ module SimpleMachine
         result = @defined_transitions[from_state].inject(false) { |sum, hash| sum || hash[:transition] == transition }
         return result
       end
-      def allow_transition(transition, options)
+      def after_transition(&block)
+        @after_transition = block
+      end
+      def allow_transition(transition, options, &block)
         @defined_transitions ||= {}
         raise "Unknown source state #{options[:from]}. Please define it first as initial_state or in other_states." unless all_states.include?(options[:from])
         raise "Unknown target state #{options[:to]}. Please define it first as initial_state or in other_states." unless all_states.include?(options[:to])
@@ -46,6 +49,8 @@ module SimpleMachine
         
         @defined_transitions[options[:from]] = [] unless @defined_transitions.has_key?(options[:from])
         @defined_transitions[options[:from]] << { :transition => transition, :target_state => options[:to] }     
+        
+        transition_block = block_given? ? block : false
         
         class_eval do
           define_method "can_#{transition}?" do
@@ -58,11 +63,17 @@ module SimpleMachine
             else
               raise "Invalid transition ##{transition.to_s.gsub '_', ' '} from '#{current_state}' state"
             end unless allowed_transitions.include? transition
-            variable = "@#{self.class.parents_state_field_name}"
-            result = @owner.instance_eval { instance_variable_set variable, options[:to] }
-            callback_method = "after_#{self.class.parents_state_field_name}_changed".to_sym
-            @owner.send callback_method if @owner.respond_to? callback_method
-            result
+            
+            if !transition_block or @owner.instance_eval( &transition_block )
+              variable = "@#{self.class.parents_state_field_name}"
+              result = @owner.instance_eval { instance_variable_set variable, options[:to] }
+              # after_transition callback
+              after_transition_block = self.class.instance_eval { @after_transition }
+              @owner.instance_eval &after_transition_block if after_transition_block
+              result
+            else
+              false
+            end
           end
         end   
       end
@@ -70,7 +81,7 @@ module SimpleMachine
   end
 
   module ClassMethods
-      
+
     def implement_state_machine_for(state_field_name, &block)
       machine_property_name = "#{state_field_name}_machine".to_sym
       default_state_field_name = "#{state_field_name}_default_state".to_sym
