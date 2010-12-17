@@ -34,7 +34,7 @@ describe SimpleMachine, "for :dispatch_state field on Job, when state machine is
   end
 
   context "with only initial state :waiting" do
-    before :each do
+    before :all do
       Job.implement_state_machine_for :dispatch_state do
         initial_state :waiting
       end
@@ -200,12 +200,11 @@ describe SimpleMachine, "for :dispatch_state field on Job, when state machine is
   end
   context "when there are more job instances" do
     before :all do
-      Job.new.dispatch_state_machine.class.expects(:defined_transition?).with(:assign, :waiting).returns false
-      Job.new.dispatch_state_machine.class.expects(:defined_transition?).with(:accept, :assigned)
-      Job.implement_state_machine_for :dispatch_state do
-        allow_transition :assign, :from => :waiting, :to => :assigned
-        allow_transition :accept, :from => :assigned, :to => :accepted
-      end
+      @inner_state_machine_class = Job.new.dispatch_state_machine.class
+      @inner_state_machine_class.expects(:defined_transition?).with(:assign, :waiting).returns false
+      @inner_state_machine_class.expects(:defined_transition?).with(:accept, :assigned)
+      @inner_state_machine_class.allow_transition :assign, :from => :waiting, :to => :assigned
+      @inner_state_machine_class.allow_transition :accept, :from => :assigned, :to => :accepted
     end
     
     it "each instance tracks it's own flow" do
@@ -220,6 +219,11 @@ describe SimpleMachine, "for :dispatch_state field on Job, when state machine is
       job1.dispatch_state.should be(:assigned)
       job2.dispatch_state.should be(:accepted)
       job3.dispatch_state.should be(:waiting)
+    end
+  end
+  context "when invoking implement_state_machine_for :dispatch_state on Job again" do
+    xit "undos meta works from previous invocation" do
+      
     end
   end
 end

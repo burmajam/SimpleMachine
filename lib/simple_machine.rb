@@ -102,7 +102,7 @@ module SimpleMachine
         end
       end
       
-      SimpleMachine::ClassMethods.get_state_machine_class_for(self, state_field_name).instance_eval &block
+      SimpleMachine::ClassMethods.get_state_machine_class_for(self, state_field_name, true).instance_eval &block
       
       raise "Initial state not defined." unless send default_state_field_name
     end
@@ -111,10 +111,13 @@ module SimpleMachine
     
     @state_machine_classes = {}
     
-    def self.get_state_machine_class_for(cls, state_field_name)
+    def self.get_state_machine_class_for(cls, state_field_name, delete_if_exists=false)
       key = [cls.to_s.to_sym, state_field_name]
+      if @state_machine_classes.has_key? key and delete_if_exists
+        @state_machine_classes.delete key
+      end
       unless @state_machine_classes.has_key? key
-        @state_machine_classes[key] ||= SimpleMachine::SimpleMachinePrototype.clone
+        @state_machine_classes[key] = SimpleMachine::SimpleMachinePrototype.clone
         @state_machine_classes[key].owner_class = cls
         @state_machine_classes[key].parents_state_field_name = state_field_name
       end
